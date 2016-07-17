@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"sort"
 	"strings"
 	"unicode"
 
@@ -212,6 +213,20 @@ func ParseGrammar(r io.Reader) (Grammar, error) {
 
 type Grammar map[string]Productions
 
+func (g Grammar) String() string {
+	names := make([]string, 0, len(g))
+	for n := range g {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	var buf bytes.Buffer
+	for _, name := range names {
+		prods := g[name]
+		fmt.Fprintf(&buf, "%s:\n%s\n", name, prods)
+	}
+	return buf.String()
+}
+
 // ExtractProduction extracts the named statement and all its dependencies,
 // in order, into a BNF file. If descend is false, only the named statement
 // is extracted. Inline contains a set of names to include directly where
@@ -383,7 +398,7 @@ func WalkToken(e Expression, f func(Token)) {
 type Productions []Expression
 
 func (p Productions) Match(match, exclude *regexp.Regexp) Productions {
-	var n []Expression
+	var n Productions
 	for _, e := range p {
 		s := e.String()
 		if exclude != nil && exclude.MatchString(s) {
